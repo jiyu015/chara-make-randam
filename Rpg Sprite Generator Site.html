@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>32x32 RPG歩行キャラジェネレーター</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --border: #374151;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0b1020, var(--bg));
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .section {
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    select, button {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 15px;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform 0.06s ease, opacity 0.2s ease;
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      border: none;
+    }
+
+    button:hover { opacity: 0.95; }
+    button:active { transform: translateY(1px); }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-sub {
+      background: #334155;
+    }
+
+    .preview-wrap {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .canvas-box {
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background-image:
+        linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.04) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.04) 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .info {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .mini-title {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin: 0 0 8px;
+    }
+
+    .sheet-box {
+      margin-top: 18px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(96, 165, 250, 0.15);
+      color: #bfdbfe;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 960px) {
+      .grid, .preview-wrap {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>32×32 RPG歩行キャラジェネレーター</h1>
+    <div class="sub">
+      キャラタイプを選び、髪・顔・服・装飾を組み合わせて、4方向×3コマの歩行キャラを生成します。<br>
+      今の段階では<strong>色ブロックの仮パーツ</strong>で動くサンプルです。あとからPNG差し替え対応しやすい構造にしてあります。
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="section">
+          <h2>キャラタイプ</h2>
+          <label for="typeSelect">タイプを選択</label>
+          <select id="typeSelect"></select>
+          <div class="small">
+            体型は <strong>child / adult / old</strong> の3種類です。<br>
+            キャラタイプに応じて利用できる候補が変わります。
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>パーツ選択</h2>
+
+          <label for="hairSelect">髪</label>
+          <select id="hairSelect"></select>
+
+          <label for="faceSelect" style="margin-top:12px;">顔</label>
+          <select id="faceSelect"></select>
+
+          <label for="clothesSelect" style="margin-top:12px;">服</label>
+          <select id="clothesSelect"></select>
+
+          <label for="accessorySelect" style="margin-top:12px;">装飾</label>
+          <select id="accessorySelect"></select>
+
+          <div class="btn-row">
+            <button id="randomBtn">🎲 ランダム生成</button>
+            <button id="applyBtn" class="btn-sub">更新</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>ダウンロード</h2>
+          <div class="btn-row">
+            <button id="downloadSheetBtn">シートPNG保存</button>
+            <button id="downloadFramesBtn" class="btn-sub">12枚保存</button>
+          </div>
+          <div class="small">
+            現在の並び順は <strong>下 → 左 → 右 → 上</strong> です。<br>
+            32×32 × 12コマ = <strong>96×128</strong> で出力します。
+          </div>
+          <div id="status" class="status">準備完了</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="preview-wrap">
+          <div>
+            <div class="mini-title">歩行プレビュー</div>
+            <div class="canvas-box center">
+              <canvas id="previewCanvas" width="32" height="32" style="width:256px;height:256px;"></canvas>
+            </div>
+            <div class="btn-row" style="margin-top:12px;">
+              <button id="playBtn">▶ 再生 / 停止</button>
+              <button id="directionBtn" class="btn-sub">向き切替</button>
+            </div>
+            <div class="small">
+              向きは <strong>下 → 左 → 右 → 上</strong> で切り替わります。<br>
+              左右はサイド画像を反転して使っています。
+            </div>
+          </div>
+
+          <div>
+            <div class="mini-title">現在の設定</div>
+            <div id="currentConfig" class="info"></div>
+
+            <div style="margin-top:16px;">
+              <span class="badge">32×32固定</span>
+              <span class="badge">4方向</span>
+              <span class="badge">3コマ歩行</span>
+              <span class="badge">透過PNG出力</span>
+              <span class="badge">自由利用想定</span>
+            </div>
+
+            <div class="sheet-box">
+              <div class="mini-title">スプライトシート確認</div>
+              <div class="canvas-box center">
+                <canvas id="sheetCanvas" width="96" height="128" style="width:384px;height:512px;"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // 仕様データ
+    // =========================
+    const TYPES = {
+      child_boy: {
+        label: '子供（男）',
+        bodyType: 'child',
+        hair: ['short_boy', 'spiky_boy', 'cap_boy'],
+        face: ['boy_normal', 'boy_smile'],
+        clothes: ['child_casual_blue', 'child_casual_green'],
+        accessory: ['none', 'ribbon_small']
+      },
+      child_girl: {
+        label: '子供（女）',
+        bodyType: 'child',
+        hair: ['bob_girl', 'twin_girl', 'cap_girl'],
+        face: ['girl_normal', 'girl_smile'],
+        clothes: ['child_dress_pink', 'child_dress_yellow'],
+        accessory: ['none', 'ribbon_small']
+      },
+      young_male: {
+        label: '青年（男）',
+        bodyType: 'adult',
+        hair: ['young_short', 'young_spiky', 'young_longback'],
+        face: ['male_normal', 'male_smile'],
+        clothes: ['young_tunic_blue', 'young_tunic_brown'],
+        accessory: ['none', 'scarf']
+      },
+      young_female: {
+        label: '青年（女）',
+        bodyType: 'adult',
+        hair: ['young_bob', 'young_long', 'young_side'],
+        face: ['female_normal', 'female_smile'],
+        clothes: ['young_dress_blue', 'young_dress_red'],
+        accessory: ['none', 'ribbon_large']
+      },
+      old_man: {
+        label: '老人',
+        bodyType: 'old',
+        hair: ['old_short', 'old_baldrim'],
+        face: ['old_man_face', 'old_man_beard'],
+        clothes: ['old_robe_gray', 'old_robe_brown'],
+        accessory: ['none', 'cane_badge']
+      },
+      old_woman: {
+        label: '老婆',
+        bodyType: 'old',
+        hair: ['old_bun', 'old_short'],
+        face: ['old_woman_face', 'old_woman_smile'],
+        clothes: ['old_dress_gray', 'old_dress_purple'],
+        accessory: ['none', 'shawl']
+      },
+      soldier: {
+        label: '兵士',
+        bodyType: 'adult',
+        hair: ['soldier_short', 'soldier_flat'],
+        face: ['soldier_face', 'soldier_hard'],
+        clothes: ['armor_iron', 'armor_bronze'],
+        accessory: ['helmet', 'none']
+      },
+      king: {
+        label: '王様',
+        bodyType: 'adult',
+        hair: ['king_short', 'king_wave'],
+        face: ['king_face', 'king_beard'],
+        clothes: ['king_cloak_red', 'king_cloak_purple'],
+        accessory: ['crown_gold']
+      },
+      princess: {
+        label: '王女',
+        bodyType: 'adult',
+        hair: ['princess_long', 'princess_ring'],
+        face: ['princess_face', 'princess_smile'],
+        clothes: ['princess_dress_pink', 'princess_dress_blue'],
+        accessory: ['crown_silver', 'tiara']
+      }
+    };
+
+    const BODY_COLORS = {
+      child: '#7dd3fc',
+      adult: '#86efac',
+      old: '#c4b5fd'
+    };
+
+    const PART_COLORS = {
+      // hair
+      short_boy: '#3f3f46', spiky_boy: '#92400e', cap_boy: '#1d4ed8',
+      bob_girl: '#a21caf', twin_girl: '#db2777', cap_girl: '#ea580c',
+      young_short: '#4b5563', young_spiky: '#b45309', young_longback: '#1f2937',
+      young_bob: '#a855f7', young_long: '#7c3aed', young_side: '#ec4899',
+      old_short: '#d4d4d8', old_baldrim: '#f5f5f4', old_bun: '#e5e7eb',
+      soldier_short: '#374151', soldier_flat: '#6b7280',
+      king_short: '#78350f', king_wave: '#854d0e',
+      princess_long: '#f472b6', princess_ring: '#c084fc',
+
+      // face
+      boy_normal: '#fde68a', boy_smile: '#fcd34d',
+      girl_normal: '#fbcfe8', girl_smile: '#f9a8d4',
+      male_normal: '#fdba74', male_smile: '#fb923c',
+      female_normal: '#fbcfe8', female_smile: '#f9a8d4',
+      old_man_face: '#d6d3d1', old_man_beard: '#e7e5e4',
+      old_woman_face: '#ddd6fe', old_woman_smile: '#c4b5fd',
+      soldier_face: '#f59e0b', soldier_hard: '#d97706',
+      king_face: '#fbbf24', king_beard: '#fde047',
+      princess_face: '#f9a8d4', princess_smile: '#f472b6',
+
+      // clothes
+      child_casual_blue: '#2563eb', child_casual_green: '#16a34a',
+      child_dress_pink: '#ec4899', child_dress_yellow: '#facc15',
+      young_tunic_blue: '#1d4ed8', young_tunic_brown: '#92400e',
+      young_dress_blue: '#3b82f6', young_dress_red: '#ef4444',
+      old_robe_gray: '#6b7280', old_robe_brown: '#8b5e3c',
+      old_dress_gray: '#9ca3af', old_dress_purple: '#8b5cf6',
+      armor_iron: '#94a3b8', armor_bronze: '#b45309',
+      king_cloak_red: '#b91c1c', king_cloak_purple: '#7e22ce',
+      princess_dress_pink: '#f472b6', princess_dress_blue: '#60a5fa',
+
+      // accessory
+      none: null,
+      ribbon_small: '#ef4444', ribbon_large: '#dc2626',
+      scarf: '#0ea5e9', cane_badge: '#a16207', shawl: '#7c3aed',
+      helmet: '#475569', crown_gold: '#eab308', crown_silver: '#cbd5e1', tiara: '#e9d5ff'
+    };
+
+    const DIRECTIONS = ['down', 'left', 'right', 'up'];
+    const SHEET_ROWS = ['down', 'left', 'right', 'up'];
+    const FRAME_COUNT = 3;
+
+    // =========================
+    // DOM
+    // =========================
+    const typeSelect = document.getElementById('typeSelect');
+    const hairSelect = document.getElementById('hairSelect');
+    const faceSelect = document.getElementById('faceSelect');
+    const clothesSelect = document.getElementById('clothesSelect');
+    const accessorySelect = document.getElementById('accessorySelect');
+
+    const randomBtn = document.getElementById('randomBtn');
+    const applyBtn = document.getElementById('applyBtn');
+    const playBtn = document.getElementById('playBtn');
+    const directionBtn = document.getElementById('directionBtn');
+    const downloadSheetBtn = document.getElementById('downloadSheetBtn');
+    const downloadFramesBtn = document.getElementById('downloadFramesBtn');
+
+    const previewCanvas = document.getElementById('previewCanvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    const sheetCanvas = document.getElementById('sheetCanvas');
+    const sheetCtx = sheetCanvas.getContext('2d');
+    const currentConfig = document.getElementById('currentConfig');
+    const statusEl = document.getElementById('status');
+
+    // =========================
+    // 状態
+    // =========================
+    let currentDirectionIndex = 0;
+    let currentFrame = 0;
+    let playing = true;
+    let animTimer = null;
+
+    const state = {
+      type: 'child_boy',
+      hair: '',
+      face: '',
+      clothes: '',
+      accessory: ''
+    };
+
+    // =========================
+    // 初期化
+    // =========================
+    function init() {
+      populateTypeOptions();
+      updatePartOptionsByType();
+      randomizeWithinCurrentType();
+      applySelectionsToState();
+      redrawAll();
+      startAnimation();
+    }
+
+    function populateTypeOptions() {
+      typeSelect.innerHTML = '';
+      Object.entries(TYPES).forEach(([key, value]) => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = value.label;
+        typeSelect.appendChild(option);
+      });
+      typeSelect.value = state.type;
+    }
+
+    function setOptions(selectEl, values) {
+      selectEl.innerHTML = '';
+      values.forEach(v => {
+        const option = document.createElement('option');
+        option.value = v;
+        option.textContent = v;
+        selectEl.appendChild(option);
+      });
+    }
+
+    function updatePartOptionsByType() {
+      const config = TYPES[typeSelect.value];
+      setOptions(hairSelect, config.hair);
+      setOptions(faceSelect, config.face);
+      setOptions(clothesSelect, config.clothes);
+      setOptions(accessorySelect, config.accessory);
+    }
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function randomizeWithinCurrentType() {
+      const config = TYPES[typeSelect.value];
+      hairSelect.value = randomItem(config.hair);
+      faceSelect.value = randomItem(config.face);
+      clothesSelect.value = randomItem(config.clothes);
+      accessorySelect.value = randomItem(config.accessory);
+    }
+
+    function applySelectionsToState() {
+      state.type = typeSelect.value;
+      state.hair = hairSelect.value;
+      state.face = faceSelect.value;
+      state.clothes = clothesSelect.value;
+      state.accessory = accessorySelect.value;
+      updateConfigText();
+    }
+
+    function updateConfigText() {
+      const cfg = TYPES[state.type];
+      currentConfig.innerHTML = `
+        <strong>タイプ:</strong> ${cfg.label}<br>
+        <strong>体型:</strong> ${cfg.bodyType}<br>
+        <strong>髪:</strong> ${state.hair}<br>
+        <strong>顔:</strong> ${state.face}<br>
+        <strong>服:</strong> ${state.clothes}<br>
+        <strong>装飾:</strong> ${state.accessory}
+      `;
+    }
+
+    // =========================
+    // 描画ロジック（仮パーツ版）
+    // 後でPNG読み込み版に差し替えやすい構造
+    // =========================
+    function drawSingleFrame(ctx, direction, frame, dx = 0, dy = 0, scale = 1) {
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.scale(scale, scale);
+      ctx.clearRect(0, 0, 32, 32);
+
+      const cfg = TYPES[state.type];
+      drawBody(ctx, cfg.bodyType, direction, frame);
+      drawClothes(ctx, state.clothes, cfg.bodyType, direction, frame);
+      drawFace(ctx, state.face, cfg.bodyType, direction, frame);
+      drawHair(ctx, state.hair, cfg.bodyType, direction, frame);
+      drawAccessory(ctx, state.accessory, cfg.bodyType, direction, frame);
+
+      ctx.restore();
+    }
+
+    function frameBounce(frame) {
+      if (frame === 1) return -1;
+      if (frame === 2) return 0;
+      return 1;
+    }
+
+    function getBodyRect(bodyType) {
+      if (bodyType === 'child') return { x: 10, y: 10, w: 12, h: 14 };
+      if (bodyType === 'adult') return { x: 10, y: 8, w: 12, h: 16 };
+      return { x: 10, y: 8, w: 12, h: 16 };
+    }
+
+    function drawBody(ctx, bodyType, direction, frame) {
+      const c = BODY_COLORS[bodyType];
+      const { x, y, w, h } = getBodyRect(bodyType);
+      const bounce = frameBounce(frame);
+
+      ctx.fillStyle = c;
+
+      // 頭
+      ctx.fillRect(11, y - 4 + (frame === 1 ? 0 : frame === 2 ? -1 : 0), 10, 8);
+      // 体
+      ctx.fillRect(x, y + bounce, w, h - 4);
+
+      // 足（簡易歩行）
+      if (direction === 'left' || direction === 'right') {
+        ctx.fillRect(x + 2, y + h - 1, 3, 6 + (frame === 0 ? 1 : frame === 2 ? -1 : 0));
+        ctx.fillRect(x + 7, y + h - 1, 3, 6 + (frame === 2 ? 1 : frame === 0 ? -1 : 0));
+      } else {
+        ctx.fillRect(x + 2, y + h - 1, 3, 6 + (frame === 0 ? 1 : frame === 2 ? -1 : 0));
+        ctx.fillRect(x + 7, y + h - 1, 3, 6 + (frame === 2 ? 1 : frame === 0 ? -1 : 0));
+      }
+
+      // 腕
+      if (direction === 'left') {
+        ctx.fillRect(x - 2, y + 2, 3, 7 + (frame === 2 ? 1 : 0));
+      } else if (direction === 'right') {
+        ctx.fillRect(x + w - 1, y + 2, 3, 7 + (frame === 0 ? 1 : 0));
+      } else {
+        ctx.fillRect(x - 2, y + 2, 3, 6 + (frame === 0 ? 1 : 0));
+        ctx.fillRect(x + w - 1, y + 2, 3, 6 + (frame === 2 ? 1 : 0));
+      }
+    }
+
+    function drawClothes(ctx, clothesId, bodyType, direction, frame) {
+      const color = PART_COLORS[clothesId] || '#64748b';
+      const { x, y, w, h } = getBodyRect(bodyType);
+      const bounce = frameBounce(frame);
+      ctx.fillStyle = color;
+
+      if (clothesId.includes('dress') || clothesId.includes('robe') || clothesId.includes('cloak')) {
+        ctx.fillRect(x - 1, y + 4 + bounce, w + 2, h - 3);
+        if (direction === 'down' || direction === 'up') {
+          ctx.fillRect(x - 2, y + h - 1 + bounce, w + 4, 2);
+        }
+      } else if (clothesId.includes('armor')) {
+        ctx.fillRect(x, y + 3 + bounce, w, h - 6);
+        ctx.fillStyle = '#e5e7eb';
+        ctx.fillRect(x + 4, y + 6 + bounce, 4, 2);
+      } else {
+        ctx.fillRect(x, y + 4 + bounce, w, h - 7);
+      }
+    }
+
+    function drawFace(ctx, faceId, bodyType, direction, frame) {
+      const color = PART_COLORS[faceId] || '#fde68a';
+      ctx.fillStyle = color;
+
+      // 正面・背面・側面で簡略化
+      if (direction === 'up') {
+        return;
+      }
+
+      if (direction === 'left' || direction === 'right') {
+        ctx.fillRect(14, 7, 4, 4);
+        if (faceId.includes('beard')) {
+          ctx.fillStyle = '#d6d3d1';
+          ctx.fillRect(13, 10, 5, 3);
+        }
+        return;
+      }
+
+      ctx.fillRect(12, 7, 8, 5);
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(13, 8, 1, 1);
+      ctx.fillRect(17, 8, 1, 1);
+      if (faceId.includes('smile')) {
+        ctx.fillRect(14, 10, 3, 1);
+      }
+      if (faceId.includes('beard')) {
+        ctx.fillStyle = '#d6d3d1';
+        ctx.fillRect(12, 10, 8, 3);
+      }
+    }
+
+    function drawHair(ctx, hairId, bodyType, direction, frame) {
+      const color = PART_COLORS[hairId] || '#334155';
+      ctx.fillStyle = color;
+
+      if (direction === 'up') {
+        ctx.fillRect(10, 3, 12, 6);
+        if (hairId.includes('long') || hairId.includes('bun') || hairId.includes('ring')) {
+          ctx.fillRect(10, 9, 12, 2);
+        }
+        return;
+      }
+
+      if (direction === 'left' || direction === 'right') {
+        ctx.fillRect(11, 3, 10, 5);
+        if (hairId.includes('long') || hairId.includes('side') || hairId.includes('ring')) {
+          ctx.fillRect(direction === 'left' ? 10 : 18, 7, 2, 6);
+        }
+        return;
+      }
+
+      ctx.fillRect(10, 3, 12, 5);
+      if (hairId.includes('spiky')) {
+        ctx.fillRect(9, 4, 1, 1);
+        ctx.fillRect(22, 4, 1, 1);
+      }
+      if (hairId.includes('long') || hairId.includes('twin') || hairId.includes('ring')) {
+        ctx.fillRect(10, 8, 2, 5);
+        ctx.fillRect(20, 8, 2, 5);
+      }
+      if (hairId.includes('bob')) {
+        ctx.fillRect(10, 8, 12, 2);
+      }
+      if (hairId.includes('baldrim')) {
+        ctx.clearRect(13, 3, 6, 2);
+      }
+    }
+
+    function drawAccessory(ctx, accessoryId, bodyType, direction, frame) {
+      const color = PART_COLORS[accessoryId];
+      if (!color) return;
+      ctx.fillStyle = color;
+
+      if (accessoryId.includes('crown') || accessoryId === 'tiara') {
+        ctx.fillRect(11, 1, 10, 2);
+        ctx.fillRect(12, 0, 1, 1);
+        ctx.fillRect(15, 0, 1, 1);
+        ctx.fillRect(18, 0, 1, 1);
+      } else if (accessoryId.includes('helmet')) {
+        ctx.fillRect(10, 2, 12, 4);
+      } else if (accessoryId.includes('ribbon')) {
+        ctx.fillRect(20, 4, 3, 2);
+      } else if (accessoryId === 'scarf') {
+        ctx.fillRect(11, 12, 10, 2);
+      } else if (accessoryId === 'shawl') {
+        ctx.fillRect(9, 13, 14, 2);
+      } else if (accessoryId === 'cane_badge') {
+        ctx.fillRect(22, 14, 1, 10);
+      }
+    }
+
+    // =========================
+    // 画面更新
+    // =========================
+    function redrawPreview() {
+      previewCtx.clearRect(0, 0, 32, 32);
+      drawSingleFrame(previewCtx, DIRECTIONS[currentDirectionIndex], currentFrame);
+    }
+
+    function redrawSheet() {
+      sheetCtx.clearRect(0, 0, sheetCanvas.width, sheetCanvas.height);
+      for (let row = 0; row < SHEET_ROWS.length; row++) {
+        for (let frame = 0; frame < FRAME_COUNT; frame++) {
+          const x = frame * 32;
+          const y = row * 32;
+          drawSingleFrame(sheetCtx, SHEET_ROWS[row], frame, x, y, 1);
+        }
+      }
+    }
+
+    function redrawAll() {
+      redrawPreview();
+      redrawSheet();
+    }
+
+    // =========================
+    // アニメーション
+    // =========================
+    function startAnimation() {
+      if (animTimer) clearInterval(animTimer);
+      animTimer = setInterval(() => {
+        if (!playing) return;
+        currentFrame = (currentFrame + 1) % FRAME_COUNT;
+        redrawPreview();
+      }, 280);
+    }
+
+    // =========================
+    // ダウンロード
+    // =========================
+    function downloadCanvas(canvas, filename) {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = filename;
+      link.click();
+    }
+
+    function downloadAllFrames() {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 32;
+      tempCanvas.height = 32;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      for (const direction of SHEET_ROWS) {
+        for (let frame = 0; frame < FRAME_COUNT; frame++) {
+          tempCtx.clearRect(0, 0, 32, 32);
+          drawSingleFrame(tempCtx, direction, frame);
+          downloadCanvas(tempCanvas, `${state.type}_${direction}_${frame + 1}.png`);
+        }
+      }
+    }
+
+    // =========================
+    // イベント
+    // =========================
+    typeSelect.addEventListener('change', () => {
+      updatePartOptionsByType();
+      randomizeWithinCurrentType();
+      applySelectionsToState();
+      redrawAll();
+      statusEl.textContent = `タイプ変更: ${TYPES[state.type].label}`;
+    });
+
+    randomBtn.addEventListener('click', () => {
+      randomizeWithinCurrentType();
+      applySelectionsToState();
+      redrawAll();
+      statusEl.textContent = 'ランダム生成しました';
+    });
+
+    applyBtn.addEventListener('click', () => {
+      applySelectionsToState();
+      redrawAll();
+      statusEl.textContent = 'パーツを更新しました';
+    });
+
+    playBtn.addEventListener('click', () => {
+      playing = !playing;
+      statusEl.textContent = playing ? 'アニメ再生中' : 'アニメ停止中';
+    });
+
+    directionBtn.addEventListener('click', () => {
+      currentDirectionIndex = (currentDirectionIndex + 1) % DIRECTIONS.length;
+      redrawPreview();
+      statusEl.textContent = `向き: ${DIRECTIONS[currentDirectionIndex]}`;
+    });
+
+    downloadSheetBtn.addEventListener('click', () => {
+      redrawSheet();
+      downloadCanvas(sheetCanvas, `${state.type}_sheet_32x32.png`);
+      statusEl.textContent = 'スプライトシートを保存しました';
+    });
+
+    downloadFramesBtn.addEventListener('click', () => {
+      downloadAllFrames();
+      statusEl.textContent = '12枚のPNGを保存しました';
+    });
+
+    // =========================
+    // 起動
+    // =========================
+    init();
+  </script>
+</body>
+</html>
