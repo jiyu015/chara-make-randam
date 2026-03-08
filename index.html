@@ -822,6 +822,39 @@
     });
 
     init();
+
+    function drawFace(ctx, faceId, bodyType, direction, frame) {
+
+  if(bodyType === "child" && faceId === "normal"){
+
+    const frameNames = ["front","side","back"];
+    const frameNum = frame + 1;
+
+    let dir = "front";
+
+    if(direction === "down") dir = "front";
+    if(direction === "up") dir = "back";
+    if(direction === "left" || direction === "right") dir = "side";
+
+    const img = new Image();
+    img.src = `assets/child/face/normal/${dir}_${frameNum}.png`;
+
+    img.onload = () => {
+      ctx.save();
+
+      if(direction === "left"){
+        ctx.translate(32,0);
+        ctx.scale(-1,1);
+      }
+
+      ctx.drawImage(img,0,0,32,32);
+      ctx.restore();
+    };
+
+    return;
+  }
+}
+    
   </script>
 </body>
 </html>
