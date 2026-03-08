@@ -196,7 +196,7 @@
     <h1>32×32 RPG歩行キャラジェネレーター</h1>
     <div class="sub">
       キャラタイプを選び、髪・顔・服・装飾を組み合わせて、4方向×3コマの歩行キャラを生成します。<br>
-      今の段階では<strong>色ブロックの仮パーツ</strong>で動くサンプルです。あとからPNG差し替え対応しやすい構造にしてあります。
+      子供タイプの「顔」は、透過PNG素材を読み込むようにしてあります。
     </div>
 
     <div class="grid">
@@ -288,15 +288,12 @@
   </div>
 
   <script>
-    // =========================
-    // 仕様データ
-    // =========================
     const TYPES = {
       child_boy: {
         label: '子供（男）',
         bodyType: 'child',
         hair: ['short_boy', 'spiky_boy', 'cap_boy'],
-        face: ['boy_normal', 'boy_smile'],
+        face: ['normal'],
         clothes: ['child_casual_blue', 'child_casual_green'],
         accessory: ['none', 'ribbon_small']
       },
@@ -304,7 +301,7 @@
         label: '子供（女）',
         bodyType: 'child',
         hair: ['bob_girl', 'twin_girl', 'cap_girl'],
-        face: ['girl_normal', 'girl_smile'],
+        face: ['normal'],
         clothes: ['child_dress_pink', 'child_dress_yellow'],
         accessory: ['none', 'ribbon_small']
       },
@@ -373,7 +370,6 @@
     };
 
     const PART_COLORS = {
-      // hair
       short_boy: '#3f3f46', spiky_boy: '#92400e', cap_boy: '#1d4ed8',
       bob_girl: '#a21caf', twin_girl: '#db2777', cap_girl: '#ea580c',
       young_short: '#4b5563', young_spiky: '#b45309', young_longback: '#1f2937',
@@ -383,9 +379,6 @@
       king_short: '#78350f', king_wave: '#854d0e',
       princess_long: '#f472b6', princess_ring: '#c084fc',
 
-      // face
-      boy_normal: '#fde68a', boy_smile: '#fcd34d',
-      girl_normal: '#fbcfe8', girl_smile: '#f9a8d4',
       male_normal: '#fdba74', male_smile: '#fb923c',
       female_normal: '#fbcfe8', female_smile: '#f9a8d4',
       old_man_face: '#d6d3d1', old_man_beard: '#e7e5e4',
@@ -394,7 +387,6 @@
       king_face: '#fbbf24', king_beard: '#fde047',
       princess_face: '#f9a8d4', princess_smile: '#f472b6',
 
-      // clothes
       child_casual_blue: '#2563eb', child_casual_green: '#16a34a',
       child_dress_pink: '#ec4899', child_dress_yellow: '#facc15',
       young_tunic_blue: '#1d4ed8', young_tunic_brown: '#92400e',
@@ -405,7 +397,6 @@
       king_cloak_red: '#b91c1c', king_cloak_purple: '#7e22ce',
       princess_dress_pink: '#f472b6', princess_dress_blue: '#60a5fa',
 
-      // accessory
       none: null,
       ribbon_small: '#ef4444', ribbon_large: '#dc2626',
       scarf: '#0ea5e9', cane_badge: '#a16207', shawl: '#7c3aed',
@@ -416,9 +407,47 @@
     const SHEET_ROWS = ['down', 'left', 'right', 'up'];
     const FRAME_COUNT = 3;
 
-    // =========================
-    // DOM
-    // =========================
+    const imageCache = {};
+
+    function getFrameName(direction, frame) {
+      const num = frame + 1;
+      if (direction === 'down') return `front_${num}`;
+      if (direction === 'up') return `back_${num}`;
+      return `side_${num}`;
+    }
+
+    function getFaceImagePath(faceId, bodyType, direction, frame) {
+      if (bodyType !== 'child') return null;
+      if (faceId !== 'normal') return null;
+      const frameName = getFrameName(direction, frame);
+      return `assets/child/face/normal/${frameName}.png`;
+    }
+
+    function loadImage(src) {
+      if (!src) return null;
+      if (!imageCache[src]) {
+        const img = new Image();
+        img.src = src;
+        imageCache[src] = img;
+      }
+      return imageCache[src];
+    }
+
+    function drawImageFrame(ctx, img, direction) {
+      if (!img) return;
+      if (!img.complete) return;
+
+      if (direction === 'left') {
+        ctx.save();
+        ctx.translate(32, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0, 32, 32);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, 0, 0, 32, 32);
+      }
+    }
+
     const typeSelect = document.getElementById('typeSelect');
     const hairSelect = document.getElementById('hairSelect');
     const faceSelect = document.getElementById('faceSelect');
@@ -439,9 +468,6 @@
     const currentConfig = document.getElementById('currentConfig');
     const statusEl = document.getElementById('status');
 
-    // =========================
-    // 状態
-    // =========================
     let currentDirectionIndex = 0;
     let currentFrame = 0;
     let playing = true;
@@ -455,9 +481,6 @@
       accessory: ''
     };
 
-    // =========================
-    // 初期化
-    // =========================
     function init() {
       populateTypeOptions();
       updatePartOptionsByType();
@@ -529,10 +552,6 @@
       `;
     }
 
-    // =========================
-    // 描画ロジック（仮パーツ版）
-    // 後でPNG読み込み版に差し替えやすい構造
-    // =========================
     function drawSingleFrame(ctx, direction, frame, dx = 0, dy = 0, scale = 1) {
       ctx.save();
       ctx.translate(dx, dy);
@@ -568,21 +587,12 @@
 
       ctx.fillStyle = c;
 
-      // 頭
       ctx.fillRect(11, y - 4 + (frame === 1 ? 0 : frame === 2 ? -1 : 0), 10, 8);
-      // 体
       ctx.fillRect(x, y + bounce, w, h - 4);
 
-      // 足（簡易歩行）
-      if (direction === 'left' || direction === 'right') {
-        ctx.fillRect(x + 2, y + h - 1, 3, 6 + (frame === 0 ? 1 : frame === 2 ? -1 : 0));
-        ctx.fillRect(x + 7, y + h - 1, 3, 6 + (frame === 2 ? 1 : frame === 0 ? -1 : 0));
-      } else {
-        ctx.fillRect(x + 2, y + h - 1, 3, 6 + (frame === 0 ? 1 : frame === 2 ? -1 : 0));
-        ctx.fillRect(x + 7, y + h - 1, 3, 6 + (frame === 2 ? 1 : frame === 0 ? -1 : 0));
-      }
+      ctx.fillRect(x + 2, y + h - 1, 3, 6 + (frame === 0 ? 1 : frame === 2 ? -1 : 0));
+      ctx.fillRect(x + 7, y + h - 1, 3, 6 + (frame === 2 ? 1 : frame === 0 ? -1 : 0));
 
-      // 腕
       if (direction === 'left') {
         ctx.fillRect(x - 2, y + 2, 3, 7 + (frame === 2 ? 1 : 0));
       } else if (direction === 'right') {
@@ -614,10 +624,22 @@
     }
 
     function drawFace(ctx, faceId, bodyType, direction, frame) {
+      const pngPath = getFaceImagePath(faceId, bodyType, direction, frame);
+
+      if (pngPath) {
+        const img = loadImage(pngPath);
+
+        if (img && img.complete) {
+          drawImageFrame(ctx, img, direction);
+          return;
+        } else if (img) {
+          img.onload = () => redrawAll();
+        }
+      }
+
       const color = PART_COLORS[faceId] || '#fde68a';
       ctx.fillStyle = color;
 
-      // 正面・背面・側面で簡略化
       if (direction === 'up') {
         return;
       }
@@ -704,9 +726,6 @@
       }
     }
 
-    // =========================
-    // 画面更新
-    // =========================
     function redrawPreview() {
       previewCtx.clearRect(0, 0, 32, 32);
       drawSingleFrame(previewCtx, DIRECTIONS[currentDirectionIndex], currentFrame);
@@ -728,9 +747,6 @@
       redrawSheet();
     }
 
-    // =========================
-    // アニメーション
-    // =========================
     function startAnimation() {
       if (animTimer) clearInterval(animTimer);
       animTimer = setInterval(() => {
@@ -740,9 +756,6 @@
       }, 280);
     }
 
-    // =========================
-    // ダウンロード
-    // =========================
     function downloadCanvas(canvas, filename) {
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/png');
@@ -765,9 +778,6 @@
       }
     }
 
-    // =========================
-    // イベント
-    // =========================
     typeSelect.addEventListener('change', () => {
       updatePartOptionsByType();
       randomizeWithinCurrentType();
@@ -811,9 +821,6 @@
       statusEl.textContent = '12枚のPNGを保存しました';
     });
 
-    // =========================
-    // 起動
-    // =========================
     init();
   </script>
 </body>
