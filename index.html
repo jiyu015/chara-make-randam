@@ -1,924 +1,485 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>32x32 RPG歩行キャラジェネレーター</title>
-  <style>
-    :root {
-      --bg: #0f1220;
-      --panel: #171b2e;
-      --panel-2: #202742;
-      --text: #eef2ff;
-      --muted: #aab4d6;
-      --accent: #7cc7ff;
-      --accent-2: #91f2c3;
-      --danger: #ff8f8f;
-      --line: rgba(255,255,255,0.12);
-      --shadow: 0 10px 30px rgba(0,0,0,0.25);
-      --radius: 18px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family:
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background:
-        radial-gradient(circle at top, #1d2442 0%, #101425 38%, #0b0e1a 100%);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    .wrap {
-      width: min(1200px, calc(100% - 24px));
-      margin: 24px auto 40px;
-    }
-
-    .title-box {
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 20px 22px;
-      box-shadow: var(--shadow);
-      margin-bottom: 18px;
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: 1.6rem;
-      line-height: 1.25;
-    }
-
-    .sub {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 18px;
-      align-items: start;
-    }
-
-    @media (max-width: 980px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .panel {
-      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px;
-    }
-
-    .panel h2 {
-      margin: 0 0 14px;
-      font-size: 1.08rem;
-    }
-
-    .controls {
-      display: grid;
-      gap: 12px;
-    }
-
-    .field {
-      display: grid;
-      gap: 6px;
-    }
-
-    .field label {
-      font-size: 0.92rem;
-      color: #dfe8ff;
-    }
-
-    .field select,
-    .field input[type="range"] {
-      width: 100%;
-    }
-
-    select,
-    button,
-    input[type="range"] {
-      appearance: none;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: var(--panel-2);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 11px 12px;
-      font-size: 0.95rem;
-    }
-
-    select:focus,
-    button:focus,
-    input:focus {
-      outline: 2px solid rgba(124,199,255,0.45);
-      outline-offset: 2px;
-    }
-
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .btn-row-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    button {
-      cursor: pointer;
-      transition: 0.15s transform ease, 0.15s opacity ease, 0.15s background ease;
-      font-weight: 600;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-    }
-
-    button.primary {
-      background: linear-gradient(180deg, #4da9ff, #2b84dc);
-      border: none;
-      color: white;
-    }
-
-    button.secondary {
-      background: linear-gradient(180deg, #2d365f, #252d50);
-    }
-
-    button.good {
-      background: linear-gradient(180deg, #47c78c, #2f9f6d);
-      border: none;
-      color: white;
-    }
-
-    button.warn {
-      background: linear-gradient(180deg, #ffb56b, #e58a27);
-      border: none;
-      color: white;
-    }
-
-    .small {
-      color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.6;
-    }
-
-    .preview-wrap {
-      display: grid;
-      gap: 16px;
-    }
-
-    .viewer {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-
-    .canvas-card {
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
-        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%),
-        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.03) 75%);
-      background-size: auto, 20px 20px, 20px 20px;
-      background-position: 0 0, 0 0, 10px 10px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-    }
-
-    .canvas-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      font-size: 0.93rem;
-      color: #dfe8ff;
-    }
-
-    .canvas-center {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 220px;
-    }
-
-    .preview-canvas {
-      width: 256px;
-      height: 256px;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      border-radius: 12px;
-      background: rgba(0,0,0,0.12);
-    }
-
-    .sheet-canvas {
-      width: min(100%, 620px);
-      height: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      display: block;
-      margin: 0 auto;
-      border-radius: 12px;
-      background: rgba(0,0,0,0.12);
-    }
-
-    .status {
-      min-height: 24px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      font-size: 0.9rem;
-      color: #dce7ff;
-      line-height: 1.5;
-    }
-
-    .status.error {
-      color: #ffd0d0;
-      border-color: rgba(255,143,143,0.35);
-      background: rgba(255, 80, 80, 0.08);
-    }
-
-    .status.ok {
-      color: #d7ffea;
-      border-color: rgba(145,242,195,0.32);
-      background: rgba(71,199,140,0.08);
-    }
-
-    .inline {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(124,199,255,0.12);
-      border: 1px solid rgba(124,199,255,0.18);
-      color: #dff2ff;
-      font-size: 0.82rem;
-    }
-
-    .range-value {
-      color: var(--accent-2);
-      font-weight: 700;
-      min-width: 34px;
-      text-align: right;
-    }
-
-    .footer-note {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 0.84rem;
-      line-height: 1.6;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ドット絵キャラメーカー</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Press Start 2P', monospace;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  h1 {
+    text-align: center;
+    font-size: clamp(12px, 3vw, 20px);
+    color: #fff;
+    text-shadow: 0 0 12px #a07aff, 0 0 24px #a07aff;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 9px;
+    color: #a07aff;
+    letter-spacing: .3em;
+    margin-bottom: 20px;
+  }
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .left { flex: 1; min-width: 240px; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+  .right { flex: 1; min-width: 200px; max-width: 300px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .panel {
+    background: #16213e;
+    border: 1px solid #333;
+    border-radius: 3px;
+    padding: 10px;
+  }
+  .panel-title {
+    font-size: 8px;
+    color: #888;
+    letter-spacing: .2em;
+    margin-bottom: 8px;
+  }
+  .btn-group { display: flex; flex-wrap: wrap; gap: 5px; }
+  button.pb {
+    border: 2px solid #555;
+    background: #2a2a4a;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 5px 8px;
+    border-radius: 2px;
+    transition: all .15s;
+  }
+  button.pb:hover { background: #3a3a6a; border-color: #888; }
+  button.pb.on { background: #4a3a8a; border-color: #a07aff; color: #fff; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .swatch {
+    width: 22px; height: 22px;
+    border: 2px solid #555;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all .1s;
+  }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.on { border-color: #fff; transform: scale(1.25); }
+  .preview-box {
+    background: #16213e;
+    border: 2px solid #a07aff;
+    border-radius: 3px;
+    padding: 14px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  #previewWrap {
+    background: #0d0d1a;
+    padding: 12px;
+    border-radius: 2px;
+  }
+  #mainCanvas { image-rendering: pixelated; display: block; }
+  .size-row { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+  .zoom-row { display: flex; align-items: center; gap: 5px; }
+  .zoom-row span { font-size: 8px; color: #888; }
+  button.action {
+    width: 100%;
+    padding: 11px;
+    font-size: 11px;
+    font-family: 'Press Start 2P', monospace;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: .05em;
+    transition: all .15s;
+  }
+  button.action:hover { transform: scale(1.02); }
+  button.rand { border: 2px solid #fbbf24; background: #2a2000; color: #fbbf24; }
+  button.save { border: 2px solid #4ade80; background: #0a2a14; color: #4ade80; }
+  .all-sizes { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .size-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .size-item canvas { image-rendering: pixelated; background: #0d0d1a; }
+  .size-item span { font-size: 7px; color: #666; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="title-box">
-      <h1>32×32 RPG歩行キャラジェネレーター</h1>
-      <div class="sub">
-        32×32のパーツPNGを重ねて、RPGツクール形式の歩行キャラシート（96×128）を生成します。<br>
-        今回の完成版は <strong>assets/child</strong> の既存素材を読む前提で作成しています。adult / old も後から増やしやすい構造です。
+
+<div class="subtitle">★ PIXEL ART MAKER ★</div>
+<h1>ドット絵キャラメーカー</h1>
+
+<div class="layout">
+  <!-- 左パネル -->
+  <div class="left">
+
+    <div class="panel">
+      <div class="panel-title">キャラクター種類</div>
+      <div class="btn-group" id="typeButtons"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">肌の色</div>
+      <div class="swatches" id="skinSwatches"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">髪の色</div>
+      <div class="swatches" id="hairSwatches"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">服の色</div>
+      <div class="swatches" id="clothSwatches"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">髪型</div>
+      <div class="btn-group" id="hairStyleButtons"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">服装</div>
+      <div class="btn-group" id="outfitButtons"></div>
+    </div>
+
+  </div>
+
+  <!-- 右パネル -->
+  <div class="right">
+    <div class="preview-box">
+      <div class="panel-title" style="margin-bottom:0">プレビュー</div>
+      <div id="previewWrap">
+        <canvas id="mainCanvas"></canvas>
+      </div>
+      <div class="size-row" id="sizeButtons"></div>
+      <div class="zoom-row">
+        <span>ズーム:</span>
+        <div class="btn-group" id="zoomButtons"></div>
       </div>
     </div>
 
-    <div class="grid">
-      <section class="panel">
-        <h2>設定</h2>
+    <button class="action rand" onclick="doRandom()">🎲 ランダム作成</button>
+    <button class="action save" id="saveBtn">💾 PNG保存</button>
 
-        <div class="controls">
-          <div class="field">
-            <label for="charType">キャラタイプ</label>
-            <select id="charType"></select>
-          </div>
-
-          <div class="field">
-            <label for="bodyPart">体</label>
-            <select id="bodyPart"></select>
-          </div>
-
-          <div class="field">
-            <label for="clothesPart">服</label>
-            <select id="clothesPart"></select>
-          </div>
-
-          <div class="field">
-            <label for="facePart">顔</label>
-            <select id="facePart"></select>
-          </div>
-
-          <div class="field">
-            <label for="hairPart">髪</label>
-            <select id="hairPart"></select>
-          </div>
-
-          <div class="field">
-            <label for="accessoryPart">装飾</label>
-            <select id="accessoryPart"></select>
-          </div>
-
-          <div class="field">
-            <label for="zoomRange" class="inline">
-              <span>プレビュー拡大率</span>
-              <span id="zoomValue" class="range-value">8x</span>
-            </label>
-            <input id="zoomRange" type="range" min="4" max="16" value="8" />
-          </div>
-
-          <div class="field">
-            <label for="speedRange" class="inline">
-              <span>アニメ速度</span>
-              <span id="speedValue" class="range-value">240ms</span>
-            </label>
-            <input id="speedRange" type="range" min="120" max="500" step="10" value="240" />
-          </div>
-
-          <div class="btn-row">
-            <button id="randomBtn" class="primary">ランダム生成</button>
-            <button id="reloadBtn" class="secondary">再読み込み</button>
-          </div>
-
-          <div class="btn-row">
-            <button id="downloadSheetBtn" class="good">シートPNG保存</button>
-            <button id="downloadFramesBtn" class="warn">12枚保存</button>
-          </div>
-
-          <div class="status" id="status">
-            準備中...
-          </div>
-
-          <div class="small">
-            前提フォルダ例：<br>
-            <code>assets/child/body/base/front_1.png</code><br>
-            <code>assets/child/clothes/tunic/front_1.png</code><br>
-            <code>assets/child/face/normal/front_1.png</code><br>
-            <code>assets/child/hair/short/front_1.png</code><br>
-            <code>assets/child/accessory/none/front_1.png</code>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>プレビュー</h2>
-
-        <div class="preview-wrap">
-          <div class="viewer">
-            <div class="canvas-card">
-              <div class="canvas-title">
-                <span>歩行アニメ</span>
-                <span class="badge" id="animInfo">down / frame 1</span>
-              </div>
-              <div class="canvas-center">
-                <canvas id="previewCanvas" class="preview-canvas" width="256" height="256"></canvas>
-              </div>
-            </div>
-
-            <div class="canvas-card">
-              <div class="canvas-title">
-                <span>シート出力（96×128）</span>
-                <span class="badge">RPGツクール形式</span>
-              </div>
-              <canvas id="sheetCanvas" class="sheet-canvas" width="96" height="128"></canvas>
-            </div>
-          </div>
-
-          <div class="footer-note">
-            左向きは <strong>side</strong> 素材を左右反転して生成しています。<br>
-            右向きはそのまま <strong>side</strong> を使用します。
-          </div>
-        </div>
-      </section>
+    <div class="panel" style="width:100%">
+      <div class="panel-title">全サイズ比較</div>
+      <div class="all-sizes" id="allSizes"></div>
     </div>
   </div>
-
-  <script>
-    // =========================
-    //  基本設定
-    // =========================
-    const SPRITE_SIZE = 32;
-    const SHEET_COLS = 3;
-    const SHEET_ROWS = 4;
-    const SHEET_W = SPRITE_SIZE * SHEET_COLS; // 96
-    const SHEET_H = SPRITE_SIZE * SHEET_ROWS; // 128
-
-    const DIRECTIONS = [
-      { key: "down",  source: "front" },
-      { key: "left",  source: "side", flip: true },
-      { key: "right", source: "side", flip: false },
-      { key: "up",    source: "back" }
-    ];
-
-    const FRAMES = [1, 2, 3];
-    const LAYERS = ["body", "clothes", "face", "hair", "accessory"];
-
-    // child は今ある素材で確実に動く設定
-    // adult / old はここに候補を増やせば拡張できます
-    const DATA = {
-      child: {
-        label: "子供男 / 子供女",
-        bodyType: "child",
-        options: {
-          body: ["base"],
-          clothes: ["tunic"],
-          face: ["normal"],
-          hair: ["short"],
-          accessory: ["none"]
-        }
-      },
-      adult: {
-        label: "青年男 / 青年女 / 兵士 / 王様 / 王女",
-        bodyType: "adult",
-        options: {
-          body: ["base"],
-          clothes: ["tunic"],
-          face: ["normal"],
-          hair: ["short"],
-          accessory: ["none"]
-        }
-      },
-      old: {
-        label: "老人 / 老婆",
-        bodyType: "old",
-        options: {
-          body: ["base"],
-          clothes: ["tunic"],
-          face: ["normal"],
-          hair: ["short"],
-          accessory: ["none"]
-        }
-      }
-    };
-
-    // UI上のキャラタイプ → 実際の bodyType
-    // 今回は体型ベースを3種にまとめる仕様
-    const CHARACTER_TYPES = [
-      { id: "childBoy", label: "子供男", bodyType: "child" },
-      { id: "childGirl", label: "子供女", bodyType: "child" },
-      { id: "youngMan", label: "青年男", bodyType: "adult" },
-      { id: "youngWoman", label: "青年女", bodyType: "adult" },
-      { id: "oldMan", label: "老人", bodyType: "old" },
-      { id: "oldWoman", label: "老婆", bodyType: "old" },
-      { id: "soldier", label: "兵士", bodyType: "adult" },
-      { id: "king", label: "王様", bodyType: "adult" },
-      { id: "princess", label: "王女", bodyType: "adult" }
-    ];
-
-    const state = {
-      charType: "childBoy",
-      bodyType: "child",
-      selection: {
-        body: "base",
-        clothes: "tunic",
-        face: "normal",
-        hair: "short",
-        accessory: "none"
-      },
-      images: new Map(),
-      animDirectionIndex: 0,
-      animFrameIndex: 0,
-      animTimer: null,
-      animSpeed: 240,
-      zoom: 8
-    };
-
-    // =========================
-    //  DOM
-    // =========================
-    const $charType = document.getElementById("charType");
-    const $bodyPart = document.getElementById("bodyPart");
-    const $clothesPart = document.getElementById("clothesPart");
-    const $facePart = document.getElementById("facePart");
-    const $hairPart = document.getElementById("hairPart");
-    const $accessoryPart = document.getElementById("accessoryPart");
-
-    const $zoomRange = document.getElementById("zoomRange");
-    const $zoomValue = document.getElementById("zoomValue");
-    const $speedRange = document.getElementById("speedRange");
-    const $speedValue = document.getElementById("speedValue");
-
-    const $randomBtn = document.getElementById("randomBtn");
-    const $reloadBtn = document.getElementById("reloadBtn");
-    const $downloadSheetBtn = document.getElementById("downloadSheetBtn");
-    const $downloadFramesBtn = document.getElementById("downloadFramesBtn");
-
-    const $status = document.getElementById("status");
-    const $animInfo = document.getElementById("animInfo");
-
-    const previewCanvas = document.getElementById("previewCanvas");
-    const previewCtx = previewCanvas.getContext("2d");
-    const sheetCanvas = document.getElementById("sheetCanvas");
-    const sheetCtx = sheetCanvas.getContext("2d");
-
-    previewCtx.imageSmoothingEnabled = false;
-    sheetCtx.imageSmoothingEnabled = false;
-
-    // =========================
-    //  初期化
-    // =========================
-    init();
-
-    async function init() {
-      populateCharacterTypes();
-      updateBodyTypeFromCharType();
-      populateAllPartSelects();
-      applyZoom();
-      applySpeed();
-
-      bindEvents();
-
-      await loadCurrentSelectionAndRender();
-      startAnimation();
-    }
-
-    function bindEvents() {
-      $charType.addEventListener("change", async () => {
-        state.charType = $charType.value;
-        updateBodyTypeFromCharType();
-        populateAllPartSelects(true);
-        await loadCurrentSelectionAndRender();
-      });
-
-      $bodyPart.addEventListener("change", async () => {
-        state.selection.body = $bodyPart.value;
-        await loadCurrentSelectionAndRender();
-      });
-
-      $clothesPart.addEventListener("change", async () => {
-        state.selection.clothes = $clothesPart.value;
-        await loadCurrentSelectionAndRender();
-      });
-
-      $facePart.addEventListener("change", async () => {
-        state.selection.face = $facePart.value;
-        await loadCurrentSelectionAndRender();
-      });
-
-      $hairPart.addEventListener("change", async () => {
-        state.selection.hair = $hairPart.value;
-        await loadCurrentSelectionAndRender();
-      });
-
-      $accessoryPart.addEventListener("change", async () => {
-        state.selection.accessory = $accessoryPart.value;
-        await loadCurrentSelectionAndRender();
-      });
-
-      $randomBtn.addEventListener("click", async () => {
-        randomizeSelection();
-        syncSelectValues();
-        await loadCurrentSelectionAndRender();
-      });
-
-      $reloadBtn.addEventListener("click", async () => {
-        await loadCurrentSelectionAndRender();
-      });
-
-      $zoomRange.addEventListener("input", () => {
-        state.zoom = Number($zoomRange.value);
-        applyZoom();
-        drawPreview();
-      });
-
-      $speedRange.addEventListener("input", () => {
-        state.animSpeed = Number($speedRange.value);
-        applySpeed();
-        startAnimation();
-      });
-
-      $downloadSheetBtn.addEventListener("click", () => {
-        downloadCanvas(sheetCanvas, makeSheetFileName());
-      });
-
-      $downloadFramesBtn.addEventListener("click", async () => {
-        await downloadAllFramesAsPng();
-      });
-    }
-
-    function populateCharacterTypes() {
-      $charType.innerHTML = "";
-      for (const type of CHARACTER_TYPES) {
-        const opt = document.createElement("option");
-        opt.value = type.id;
-        opt.textContent = type.label;
-        $charType.appendChild(opt);
-      }
-      $charType.value = state.charType;
-    }
-
-    function updateBodyTypeFromCharType() {
-      const found = CHARACTER_TYPES.find(v => v.id === state.charType) || CHARACTER_TYPES[0];
-      state.bodyType = found.bodyType;
-    }
-
-    function populateAllPartSelects(resetToFirst = false) {
-      const config = DATA[state.bodyType];
-      populatePartSelect($bodyPart, "body", config.options.body, resetToFirst);
-      populatePartSelect($clothesPart, "clothes", config.options.clothes, resetToFirst);
-      populatePartSelect($facePart, "face", config.options.face, resetToFirst);
-      populatePartSelect($hairPart, "hair", config.options.hair, resetToFirst);
-      populatePartSelect($accessoryPart, "accessory", config.options.accessory, resetToFirst);
-      syncSelectValues();
-    }
-
-    function populatePartSelect(selectEl, layer, values, resetToFirst) {
-      const current = state.selection[layer];
-      selectEl.innerHTML = "";
-
-      for (const value of values) {
-        const opt = document.createElement("option");
-        opt.value = value;
-        opt.textContent = value;
-        selectEl.appendChild(opt);
-      }
-
-      if (resetToFirst || !values.includes(current)) {
-        state.selection[layer] = values[0];
-      }
-
-      selectEl.value = state.selection[layer];
-    }
-
-    function syncSelectValues() {
-      $bodyPart.value = state.selection.body;
-      $clothesPart.value = state.selection.clothes;
-      $facePart.value = state.selection.face;
-      $hairPart.value = state.selection.hair;
-      $accessoryPart.value = state.selection.accessory;
-    }
-
-    function randomizeSelection() {
-      const config = DATA[state.bodyType];
-      for (const layer of LAYERS) {
-        const list = config.options[layer];
-        state.selection[layer] = list[Math.floor(Math.random() * list.length)];
-      }
-    }
-
-    function applyZoom() {
-      previewCanvas.style.width = `${SPRITE_SIZE * state.zoom}px`;
-      previewCanvas.style.height = `${SPRITE_SIZE * state.zoom}px`;
-      $zoomValue.textContent = `${state.zoom}x`;
-    }
-
-    function applySpeed() {
-      $speedValue.textContent = `${state.animSpeed}ms`;
-    }
-
-    // =========================
-    //  画像ロード
-    // =========================
-    async function loadCurrentSelectionAndRender() {
-      setStatus("PNG素材を読み込み中...", "normal");
-
-      try {
-        state.images.clear();
-
-        const loadJobs = [];
-
-        for (const layer of LAYERS) {
-          const partName = state.selection[layer];
-
-          for (const source of ["front", "back", "side"]) {
-            for (const frame of FRAMES) {
-              const key = makeImageKey(layer, source, frame);
-              const src = makeAssetPath(state.bodyType, layer, partName, source, frame);
-              loadJobs.push(
-                loadImage(src).then(img => {
-                  state.images.set(key, img);
-                })
-              );
-            }
-          }
-        }
-
-        await Promise.all(loadJobs);
-
-        renderSheet();
-        drawPreview();
-
-        setStatus(
-          `読み込み成功：${state.bodyType} / body:${state.selection.body} / clothes:${state.selection.clothes} / face:${state.selection.face} / hair:${state.selection.hair} / accessory:${state.selection.accessory}`,
-          "ok"
-        );
-      } catch (err) {
-        console.error(err);
-        renderSheet();
-        drawPreview();
-        setStatus(
-          "画像の読み込みに失敗しました。フォルダ名・ファイル名・大文字小文字・画像配置を確認してください。",
-          "error"
-        );
-      }
-    }
-
-    function makeAssetPath(bodyType, layer, partName, source, frame) {
-      return `assets/${bodyType}/${layer}/${partName}/${source}_${frame}.png`;
-    }
-
-    function makeImageKey(layer, source, frame) {
-      return `${layer}:${source}:${frame}`;
-    }
-
-    function loadImage(src) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`画像を読めませんでした: ${src}`));
-        img.src = src + `?v=${Date.now()}`;
-      });
-    }
-
-    // =========================
-    //  描画
-    // =========================
-    function clearCanvas(ctx, canvas) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function renderSheet() {
-      clearCanvas(sheetCtx, sheetCanvas);
-
-      for (let row = 0; row < DIRECTIONS.length; row++) {
-        const dir = DIRECTIONS[row];
-
-        for (let col = 0; col < FRAMES.length; col++) {
-          const frame = FRAMES[col];
-          drawCompositedFrame(sheetCtx, dir, frame, col * SPRITE_SIZE, row * SPRITE_SIZE);
-        }
-      }
-    }
-
-    function drawPreview() {
-      clearCanvas(previewCtx, previewCanvas);
-
-      const dir = DIRECTIONS[state.animDirectionIndex];
-      const frame = FRAMES[state.animFrameIndex];
-
-      const destSize = SPRITE_SIZE * state.zoom;
-      const x = Math.floor((previewCanvas.width - destSize) / 2);
-      const y = Math.floor((previewCanvas.height - destSize) / 2);
-
-      previewCtx.save();
-      previewCtx.imageSmoothingEnabled = false;
-      previewCtx.translate(x, y);
-      previewCtx.scale(state.zoom, state.zoom);
-
-      drawCompositedFrame(previewCtx, dir, frame, 0, 0, true);
-
-      previewCtx.restore();
-
-      $animInfo.textContent = `${dir.key} / frame ${frame}`;
-    }
-
-    function drawCompositedFrame(ctx, dir, frame, dx, dy) {
-      for (const layer of LAYERS) {
-        const source = dir.source;
-        const key = makeImageKey(layer, source, frame);
-        const img = state.images.get(key);
-
-        if (!img) {
-          continue;
-        }
-
-        if (dir.flip) {
-          ctx.save();
-          ctx.translate(dx + SPRITE_SIZE, dy);
-          ctx.scale(-1, 1);
-          ctx.drawImage(img, 0, 0, SPRITE_SIZE, SPRITE_SIZE);
-          ctx.restore();
-        } else {
-          ctx.drawImage(img, dx, dy, SPRITE_SIZE, SPRITE_SIZE);
-        }
-      }
-    }
-
-    // =========================
-    //  アニメーション
-    // =========================
-    function startAnimation() {
-      stopAnimation();
-
-      state.animTimer = setInterval(() => {
-        state.animFrameIndex = (state.animFrameIndex + 1) % FRAMES.length;
-
-        if (state.animFrameIndex === 0) {
-          state.animDirectionIndex = (state.animDirectionIndex + 1) % DIRECTIONS.length;
-        }
-
-        drawPreview();
-      }, state.animSpeed);
-    }
-
-    function stopAnimation() {
-      if (state.animTimer) {
-        clearInterval(state.animTimer);
-        state.animTimer = null;
-      }
-    }
-
-    // =========================
-    //  ダウンロード
-    // =========================
-    function downloadCanvas(canvas, fileName) {
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = fileName;
-      link.click();
-    }
-
-    function makeSheetFileName() {
-      return [
-        "chara",
-        state.bodyType,
-        state.selection.body,
-        state.selection.clothes,
-        state.selection.face,
-        state.selection.hair,
-        state.selection.accessory
-      ].join("_") + ".png";
-    }
-
-    async function downloadAllFramesAsPng() {
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = SPRITE_SIZE;
-      tempCanvas.height = SPRITE_SIZE;
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCtx.imageSmoothingEnabled = false;
-
-      const order = [
-        { name: "down", dir: DIRECTIONS[0] },
-        { name: "left", dir: DIRECTIONS[1] },
-        { name: "right", dir: DIRECTIONS[2] },
-        { name: "up", dir: DIRECTIONS[3] }
-      ];
-
-      for (const item of order) {
-        for (const frame of FRAMES) {
-          tempCtx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
-          drawCompositedFrame(tempCtx, item.dir, frame, 0, 0);
-
-          const link = document.createElement("a");
-          link.href = tempCanvas.toDataURL("image/png");
-          link.download =
-            [
-              "frame",
-              state.bodyType,
-              state.selection.body,
-              state.selection.clothes,
-              state.selection.face,
-              state.selection.hair,
-              state.selection.accessory,
-              `${item.name}_${frame}`
-            ].join("_") + ".png";
-
-          link.click();
-
-          await wait(80);
-        }
-      }
-
-      setStatus("12枚の個別PNG保存を開始しました。", "ok");
-    }
-
-    function wait(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // =========================
-    //  ステータス表示
-    // =========================
-    function setStatus(message, type = "normal") {
-      $status.textContent = message;
-      $status.className = "status";
-      if (type === "error") $status.classList.add("error");
-      if (type === "ok") $status.classList.add("ok");
-    }
-  </script>
+</div>
+
+<script>
+// ─── データ定義 ──────────────────────────────────────────────
+const SKIN   = { pale:"#FFE8D0", light:"#FDDBB4", medium:"#D4956A", dark:"#8B5E3C" };
+const HAIR   = { black:"#1A1A1A", brown:"#6B3A2A", blonde:"#E8C84A", white:"#E8E8E8", red:"#C0392B", blue:"#2980B9", green:"#27AE60", pink:"#E91E8C" };
+const CLOTH  = { red:"#C0392B", blue:"#2980B9", green:"#27AE60", purple:"#8E44AD", yellow:"#F39C12", white:"#ECF0F1", black:"#2C3E50", pink:"#E91E8C", gold:"#F1C40F", silver:"#BDC3C7", brown:"#795548", navy:"#1A237E" };
+
+const CHAR_TYPES = [
+  {id:"child_boy",   label:"👦子供男", group:"child"},
+  {id:"child_girl",  label:"👧子供女", group:"child"},
+  {id:"young_man",   label:"🧑青年男", group:"adult"},
+  {id:"young_woman", label:"👩青年女", group:"adult"},
+  {id:"old_man",     label:"👴老人",   group:"elder"},
+  {id:"old_woman",   label:"👵老婆",   group:"elder"},
+  {id:"king",        label:"👑王様",   group:"royal"},
+  {id:"princess",    label:"👸お姫様", group:"royal"},
+  {id:"soldier",     label:"⚔️兵士",  group:"soldier"},
+];
+
+const HAIRSTYLES = {
+  child:   [{id:"short",l:"ショート"},{id:"bowl",l:"おかっぱ"},{id:"spiky",l:"トゲトゲ"}],
+  adult:   [{id:"short",l:"ショート"},{id:"long",l:"ロング"},{id:"spiky",l:"トゲトゲ"},{id:"ponytail",l:"ポニーテール"}],
+  elder:   [{id:"bald",l:"ハゲ"},{id:"short",l:"白髪"},{id:"bun",l:"まとめ髪"}],
+  royal:   [{id:"long",l:"ロング"},{id:"crown",l:"王冠ヘア"},{id:"ponytail",l:"ポニーテール"}],
+  soldier: [{id:"short",l:"ショート"},{id:"helmet",l:"兜"}],
+};
+const OUTFITS = {
+  child:   [{id:"casual",l:"カジュアル"},{id:"uniform",l:"制服"}],
+  adult:   [{id:"robe",l:"ローブ"},{id:"armor_light",l:"軽鎧"},{id:"casual",l:"カジュアル"}],
+  elder:   [{id:"robe",l:"ローブ"},{id:"casual",l:"普段着"}],
+  royal:   [{id:"royal_robe",l:"王族ローブ"},{id:"dress",l:"ドレス"}],
+  soldier: [{id:"armor",l:"鎧"},{id:"armor_heavy",l:"重鎧"}],
+};
+
+const SIZES = [16,32,64,128];
+let config = { type:"child_boy", skin:Object.values(SKIN)[0], hair:Object.values(HAIR)[0], cloth:Object.values(CLOTH)[0], hairStyle:"short", outfit:"casual" };
+let currentSize = 64;
+let currentZoom = 4;
+
+// ─── 描画エンジン ─────────────────────────────────────────────
+function drawChar(canvas, cfg, outputSize) {
+  const S = 32;
+  const ctx = canvas.getContext("2d");
+  canvas.width = outputSize; canvas.height = outputSize;
+  ctx.clearRect(0,0,outputSize,outputSize);
+  ctx.imageSmoothingEnabled = false;
+
+  const tmp = document.createElement("canvas");
+  tmp.width = S; tmp.height = S;
+  const g = tmp.getContext("2d");
+  g.clearRect(0,0,S,S);
+
+  const group = CHAR_TYPES.find(c=>c.id===cfg.type)?.group || "adult";
+  const scale = group==="child" ? 0.8 : 1.0;
+  const yOff  = group==="child" ? 4 : 0;
+
+  const bodyW = Math.round(8*scale),  bodyH = Math.round(10*scale);
+  const bodyX = Math.round((S-bodyW)/2), bodyTop = Math.round(16*scale)+yOff;
+
+  // 胴体
+  g.fillStyle = cfg.cloth;
+  g.fillRect(bodyX, bodyTop, bodyW, bodyH);
+
+  // 服飾り
+  if(cfg.outfit==="royal_robe"||cfg.outfit==="dress"){
+    g.fillStyle="#F1C40F"; g.fillRect(bodyX+1,bodyTop,bodyW-2,2);
+    g.fillRect(bodyX+Math.floor(bodyW/2)-1,bodyTop,2,bodyH);
+  }
+  if(cfg.outfit==="armor"||cfg.outfit==="armor_heavy"||cfg.outfit==="armor_light"){
+    g.fillStyle="#BDC3C7"; g.fillRect(bodyX,bodyTop,bodyW,3);
+    g.fillStyle="#7f8c8d"; g.fillRect(bodyX,bodyTop+3,bodyW,1);
+  }
+  if(group==="soldier"){
+    g.fillStyle="#BDC3C7";
+    g.fillRect(bodyX-1,bodyTop+2,2,bodyH-2);
+    g.fillRect(bodyX+bodyW-1,bodyTop+2,2,bodyH-2);
+  }
+
+  // 足
+  const legY=bodyTop+bodyH, legW=Math.round(3*scale), legH=Math.round(4*scale);
+  g.fillStyle=cfg.cloth;
+  g.fillRect(bodyX+1,legY,legW,legH);
+  g.fillRect(bodyX+bodyW-legW-1,legY,legW,legH);
+  g.fillStyle="#3d2b1f";
+  g.fillRect(bodyX,legY+legH,legW+1,Math.round(2*scale));
+  g.fillRect(bodyX+bodyW-legW-1,legY+legH,legW+1,Math.round(2*scale));
+
+  // 腕・手
+  const armW=Math.round(2*scale), armH=Math.round(6*scale);
+  g.fillStyle=cfg.cloth;
+  g.fillRect(bodyX-armW,bodyTop+1,armW,armH);
+  g.fillRect(bodyX+bodyW,bodyTop+1,armW,armH);
+  g.fillStyle=cfg.skin;
+  g.fillRect(bodyX-armW,bodyTop+1+armH,armW,Math.round(2*scale));
+  g.fillRect(bodyX+bodyW,bodyTop+1+armH,armW,Math.round(2*scale));
+
+  // 頭
+  const headS=Math.round(10*scale);
+  const headX=Math.round((S-headS)/2), headY=bodyTop-headS-1+yOff;
+  g.fillStyle=cfg.skin;
+  g.fillRect(headX,headY,headS,headS);
+
+  // 目
+  const eyeY=headY+Math.round(headS*0.35), eyeSz=Math.max(1,Math.round(scale*1.5));
+  g.fillStyle="#1a1a1a";
+  g.fillRect(headX+Math.round(headS*0.2),eyeY,eyeSz,eyeSz);
+  g.fillRect(headX+Math.round(headS*0.65),eyeY,eyeSz,eyeSz);
+
+  // 口
+  g.fillStyle="#c0796a";
+  g.fillRect(headX+Math.round(headS*0.3),headY+Math.round(headS*0.65),Math.round(headS*0.4),Math.max(1,Math.round(scale)));
+
+  // 老人しわ
+  if(group==="elder"){ g.fillStyle="#c9956a"; g.fillRect(headX+1,eyeY-1,1,1); g.fillRect(headX+headS-2,eyeY-1,1,1); }
+
+  // 髪
+  g.fillStyle=cfg.hair;
+  const hs=cfg.hairStyle;
+  if(hs==="short"||hs==="bowl"){
+    g.fillRect(headX,headY,headS,Math.round(headS*0.35));
+    g.fillRect(headX-1,headY,1,Math.round(headS*0.6));
+    g.fillRect(headX+headS,headY,1,Math.round(headS*0.6));
+  } else if(hs==="long"){
+    g.fillRect(headX,headY,headS,Math.round(headS*0.35));
+    g.fillRect(headX-1,headY,2,Math.round(headS*1.4));
+    g.fillRect(headX+headS-1,headY,2,Math.round(headS*1.4));
+  } else if(hs==="spiky"){
+    g.fillRect(headX,headY,headS,Math.round(headS*0.3));
+    for(let i=0;i<3;i++) g.fillRect(headX+i*3+1,headY-3,2,4);
+  } else if(hs==="ponytail"){
+    g.fillRect(headX,headY,headS,Math.round(headS*0.35));
+    g.fillRect(headX+headS-2,headY,2,Math.round(headS*1.6));
+  } else if(hs==="bun"){
+    g.fillRect(headX,headY,headS,Math.round(headS*0.3));
+    g.fillRect(headX+Math.round(headS*0.3),headY-3,Math.round(headS*0.4),4);
+  } else if(hs==="bald"){
+    g.fillStyle="#E8E8E8";
+    g.fillRect(headX,headY+Math.round(headS*0.5),headS,Math.round(headS*0.15));
+  } else if(hs==="crown"||hs==="helmet"){
+    g.fillStyle = hs==="crown" ? "#F1C40F" : "#BDC3C7";
+    g.fillRect(headX-1,headY-4,headS+2,5);
+    if(hs==="crown") for(let i=0;i<3;i++) g.fillRect(headX+i*3+1,headY-7,2,4);
+    g.fillStyle=cfg.hair;
+    g.fillRect(headX,headY,headS,Math.round(headS*0.2));
+  }
+
+  // 王様王冠
+  if(cfg.type==="king"){
+    g.fillStyle="#F1C40F"; g.fillRect(headX-1,headY-4,headS+2,4);
+    for(let i=0;i<3;i++) g.fillRect(headX+i*3+1,headY-7,2,4);
+    g.fillStyle="#e74c3c"; g.fillRect(headX+2,headY-6,1,1); g.fillRect(headX+5,headY-7,1,1); g.fillRect(headX+8,headY-6,1,1);
+  }
+  // お姫様ティアラ
+  if(cfg.type==="princess"){
+    g.fillStyle="#F1C40F"; g.fillRect(headX+1,headY-2,headS-2,2);
+    g.fillStyle="#e74c3c"; g.fillRect(headX+Math.round(headS/2)-1,headY-4,2,3);
+  }
+
+  ctx.drawImage(tmp,0,0,S,S,0,0,outputSize,outputSize);
+}
+
+// ─── UI構築 ──────────────────────────────────────────────────
+function buildUI() {
+  // キャラ種類
+  const tb = document.getElementById("typeButtons");
+  CHAR_TYPES.forEach(t=>{
+    const b = document.createElement("button");
+    b.className = "pb" + (config.type===t.id?" on":"");
+    b.textContent = t.label;
+    b.onclick = ()=>{ config.type=t.id; const g=getGroup(); config.hairStyle=HAIRSTYLES[g][0].id; config.outfit=OUTFITS[g][0].id; refresh(); };
+    tb.appendChild(b);
+  });
+
+  // 肌色
+  buildSwatches("skinSwatches", SKIN, "skin");
+  buildSwatches("hairSwatches", HAIR, "hair");
+  buildSwatches("clothSwatches", CLOTH, "cloth");
+
+  // サイズボタン
+  const sb = document.getElementById("sizeButtons");
+  SIZES.forEach(s=>{
+    const b = document.createElement("button");
+    b.className = "pb" + (currentSize===s?" on":"");
+    b.textContent = s+"px";
+    b.onclick = ()=>{ currentSize=s; refreshSize(); };
+    sb.appendChild(b);
+  });
+
+  // ズームボタン
+  const zb = document.getElementById("zoomButtons");
+  [2,4,6,8].forEach(z=>{
+    const b = document.createElement("button");
+    b.className = "pb" + (currentZoom===z?" on":"");
+    b.textContent = z+"x";
+    b.onclick = ()=>{ currentZoom=z; refreshSize(); };
+    zb.appendChild(b);
+  });
+
+  // 保存
+  document.getElementById("saveBtn").onclick = ()=>{
+    const a = document.createElement("a");
+    a.download = `pixel_${config.type}_${currentSize}x${currentSize}.png`;
+    a.href = document.getElementById("mainCanvas").toDataURL("image/png");
+    a.click();
+  };
+  document.getElementById("saveBtn").textContent = `💾 PNG保存 (${currentSize}×${currentSize})`;
+
+  buildHairOutfit();
+  buildAllSizes();
+  redraw();
+}
+
+function buildSwatches(id, palette, key) {
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  Object.entries(palette).forEach(([k,v])=>{
+    const d = document.createElement("div");
+    d.className = "swatch" + (config[key]===v?" on":"");
+    d.style.background = v;
+    d.title = k;
+    d.onclick = ()=>{ config[key]=v; buildSwatches(id,palette,key); redraw(); buildAllSizes(); };
+    el.appendChild(d);
+  });
+}
+
+function buildHairOutfit() {
+  const g = getGroup();
+  // 髪型
+  const hb = document.getElementById("hairStyleButtons");
+  hb.innerHTML = "";
+  HAIRSTYLES[g].forEach(h=>{
+    const b = document.createElement("button");
+    b.className = "pb" + (config.hairStyle===h.id?" on":"");
+    b.textContent = h.l;
+    b.onclick = ()=>{ config.hairStyle=h.id; buildHairOutfit(); redraw(); buildAllSizes(); };
+    hb.appendChild(b);
+  });
+  // 服装
+  const ob = document.getElementById("outfitButtons");
+  ob.innerHTML = "";
+  OUTFITS[g].forEach(o=>{
+    const b = document.createElement("button");
+    b.className = "pb" + (config.outfit===o.id?" on":"");
+    b.textContent = o.l;
+    b.onclick = ()=>{ config.outfit=o.id; buildHairOutfit(); redraw(); buildAllSizes(); };
+    ob.appendChild(b);
+  });
+}
+
+function buildAllSizes() {
+  const el = document.getElementById("allSizes");
+  el.innerHTML = "";
+  SIZES.forEach(s=>{
+    const wrap = document.createElement("div"); wrap.className="size-item";
+    const c = document.createElement("canvas");
+    const disp = Math.min(s,64);
+    c.style.width=disp+"px"; c.style.height=disp+"px";
+    drawChar(c, config, s);
+    const lbl = document.createElement("span"); lbl.textContent=s+"px";
+    wrap.appendChild(c); wrap.appendChild(lbl);
+    el.appendChild(wrap);
+  });
+}
+
+function redraw() {
+  const c = document.getElementById("mainCanvas");
+  drawChar(c, config, currentSize);
+  const disp = currentSize * currentZoom / 4;
+  c.style.width = disp+"px"; c.style.height = disp+"px";
+  // キャラ種類ボタン更新
+  document.querySelectorAll("#typeButtons .pb").forEach((b,i)=>{
+    b.className = "pb" + (CHAR_TYPES[i].id===config.type?" on":"");
+  });
+}
+
+function refreshSize() {
+  document.querySelectorAll("#sizeButtons .pb").forEach((b,i)=>{ b.className="pb"+(SIZES[i]===currentSize?" on":""); });
+  document.querySelectorAll("#zoomButtons .pb").forEach((b,i)=>{ b.className="pb"+([2,4,6,8][i]===currentZoom?" on":""); });
+  document.getElementById("saveBtn").textContent = `💾 PNG保存 (${currentSize}×${currentSize})`;
+  redraw();
+}
+
+function refresh() {
+  buildHairOutfit();
+  redraw();
+  buildAllSizes();
+}
+
+function getGroup() { return CHAR_TYPES.find(c=>c.id===config.type)?.group||"adult"; }
+
+function doRandom() {
+  const t = CHAR_TYPES[Math.floor(Math.random()*CHAR_TYPES.length)];
+  config.type = t.id;
+  const g = t.group;
+  config.skin  = Object.values(SKIN)[Math.floor(Math.random()*Object.values(SKIN).length)];
+  config.hair  = Object.values(HAIR)[Math.floor(Math.random()*Object.values(HAIR).length)];
+  config.cloth = Object.values(CLOTH)[Math.floor(Math.random()*Object.values(CLOTH).length)];
+  config.hairStyle = HAIRSTYLES[g][Math.floor(Math.random()*HAIRSTYLES[g].length)].id;
+  config.outfit    = OUTFITS[g][Math.floor(Math.random()*OUTFITS[g].length)].id;
+  refresh();
+}
+
+buildUI();
+</script>
 </body>
 </html>
